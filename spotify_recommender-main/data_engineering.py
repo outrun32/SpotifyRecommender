@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[27]:
-
 
 #Импорт либ
 import time
@@ -21,30 +19,24 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy import oauth2
 
 
-# In[28]:
 
+class SpotifyData:
 
 #Все данные со споти дева
-cid = '02d33d68c8724a3fb5209f420a3e4d1a'
-secret = '7e1ecf62485a4fec84700590a1453e9f'
-redirect_uri='http://localhost:7777/callback'
-username = '9xg1dh4sogilprh9kw0cdw3wi'
+    def __init__(self, username):
+        self.cid = '02d33d68c8724a3fb5209f420a3e4d1a'
+        self.secret = '7e1ecf62485a4fec84700590a1453e9f'
+        self.redirect_uri='http://localhost:7777/callback'
+        self.username = username
 
 
-# In[29]:
+        scope = 'user-top-read playlist-modify-private playlist-modify-public'
+        self.token = util.prompt_for_user_token(username, scope, client_id=self.cid, client_secret=self.secret, redirect_uri=self.redirect_uri)
 
+        if self.token:
+            self.sp = spotipy.Spotify(auth=self.token)
 
 #Авторизация с данными в споти и необходимыми скоупами
-scope = 'user-top-read playlist-modify-private playlist-modify-public'
-token = util.prompt_for_user_token(username, scope, client_id=cid, client_secret=secret, redirect_uri=redirect_uri)
-
-if token:
-    sp = spotipy.Spotify(auth=token)
-else:
-    print("Can't get token for", username)
-
-
-# In[30]:
 
 
 # Эту функцию скопипастил
@@ -85,52 +77,6 @@ def fetch_audio_features(sp, df):
     df_playlist_audio_features.set_index('track_name', inplace=True, drop=True)
     return df_playlist_audio_features
 
-
-# ###Получение всех песен
-# 
-
-# Получение всех песен с спотифая, занимает очень много времени и я уже это сделал так что закомментил
-
-# In[31]:
-
-
-# # Getting playlist IDs from each of Spotify's playlists
-# playlists = sp.user_playlists('spotify')
-# spotify_playlist_ids = []
-# while playlists:
-#     for i, playlist in enumerate(playlists['items']):
-#         spotify_playlist_ids.append(playlist['uri'][-22:])
-#     if playlists['next']:
-#         playlists = sp.next(playlists)
-#     else:
-#         playlists = None
-# spotify_playlist_ids[:20]
-
-
-# In[32]:
-
-
-# len(spotify_playlist_ids)
-
-
-# ### Получение самых прослушиваемых песен с аккаунта.
-
-# In[33]:
-
-
-
-def getTrackIDs(playlist_id):
-    playlist = sp.user_playlist('spotify', playlist_id)
-    for item in playlist['tracks']['items'][:50]:
-        track = item['track']
-        ids.append(track['id'])
-    return
-
-
-# In[34]:
-
-
-
 def getTrackFeatures(track_id):
   meta = sp.track(track_id)
   features = sp.audio_features(track_id)
@@ -158,48 +104,17 @@ def getTrackFeatures(track_id):
   track = [track_id, name, album, artist, release_date, length, popularity, danceability, acousticness, energy, instrumentalness, liveness, loudness, speechiness, tempo, time_signature]
   return track
 
-
-# In[35]:
-
-
 #Датасет
 df = pd.read_csv('data/playlist_songs.csv')
-
-
-
-# In[36]:
-
 
 # Убираем лишние колонки
 df = df.drop(columns=['name', 'album', 'artist', 'release_date'])
 
-
-
-# In[37]:
-
-
 # Убираем повторяющиеся
 df = df.drop_duplicates(subset=['track_id'])
 
-
-
-# In[ ]:
-
-
-
-
-
-# ## Getting user's favorite tracks
-
-# In[38]:
-
-
 # Топ 50 песен пользователя
 results = sp.current_user_top_tracks(limit=1000, offset=0,time_range='short_term')
-
-
-# In[39]:
-
 
 # Конвертируем в формат датасета
 track_name = []
@@ -224,11 +139,6 @@ df_favourite = pd.DataFrame({ "track_name": track_name,
                              "duration": duration, 
                              "popularity": popularity})
 
-
-
-
-# In[40]:
-
 # Собираем все параметры любимых песен
 fav_tracks = []
 for track in df_favourite['track_id']:
@@ -238,68 +148,28 @@ for track in df_favourite['track_id']:
     except:
         pass
 
-
-
-# In[41]:
-
-
 # Создаем датасет
 df_fav = pd.DataFrame(fav_tracks, columns = ['track_id', 'name', 'album', 'artist', 'release_date', 'length', 'popularity', 'danceability', 'acousticness', 'energy', 'instrumentalness', 'liveness', 'loudness', 'speechiness', 'tempo', 'time_signature'])
-df_fav.head()
-
-
-# In[42]:
-
 
 # Опять сносим колонки
 df_fav = df_fav.drop(columns=['name', 'album', 'artist', 'release_date'])
-df_fav.head()
-
-
-# In[43]:
-
 
 #Убираем дупликаты
 df_fav['track_id'].value_counts()
-
-
-# In[44]:
-
 
 # Создаём колонку "любимые" для классификации
 df_fav['favorite'] = 1
 df['favorite'] = 0 
 
-
-# In[45]:
-
-
 # Сравниваем колонки двух датасетов
-
-
-
 # ## Подготовка к созданию модели
-
-# In[46]:
-
-
-
-
-# In[47]:
-
 
 # Объединяем датасет всех песен с любимыми
 combined = pd.concat([df, df_fav])
 
 
 
-# In[48]:
 
-
-combined.favorite.value_counts()
-
-
-# In[49]:
 
 
 # Датафрэйм с любимыми песнями
@@ -307,21 +177,11 @@ df_fav = combined.loc[combined['favorite'] == 1]
 df_fav.head()
 
 
-# In[50]:
+
 
 
 # Убираем любимые песни с плэйлиста
 df = combined.loc[combined['favorite'] != 1]
-
-
-
-# In[51]:
-
-
-
-
-
-# In[52]:
 
 
 # Сохраняем в csv для создания модели
@@ -329,7 +189,6 @@ df.to_csv('encoded_playlist_songs.csv', index=False)
 df_fav.to_csv('favorite_songs.csv', index=False)
 
 
-# In[ ]:
 
 
 
