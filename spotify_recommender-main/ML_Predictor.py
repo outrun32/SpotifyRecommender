@@ -61,10 +61,7 @@ class SpotifyData:
             index += 50
 
         # Create an empty list to feed in different charactieritcs of the tracks
-        features_list = []
-        # Create keys-values of empty lists inside nested dictionary for album
-        for features in audio_features:
-            features_list.append([features['danceability'],
+        features_list = [[features['danceability'],
                               features['acousticness'],
                               features['energy'],
                               features['tempo'],
@@ -76,8 +73,7 @@ class SpotifyData:
                               features['valence'],
                               features['speechiness'],
                               features['mode']
-                              ])
-
+                              ] for features in audio_features]
         df_audio_features = pd.DataFrame(features_list, columns=['danceability', 'acousticness', 'energy', 'tempo',
                                                              'instrumentalness', 'loudness', 'liveness', 'duration_ms',
                                                              'key',
@@ -114,9 +110,24 @@ class SpotifyData:
         tempo = features[0]['tempo']
         time_signature = features[0]['time_signature']
 
-        track = [track_id, name, album, artist, release_date, length, popularity, danceability, acousticness, energy,
-             instrumentalness, liveness, loudness, speechiness, tempo, time_signature]
-        return track
+        return [
+            track_id,
+            name,
+            album,
+            artist,
+            release_date,
+            length,
+            popularity,
+            danceability,
+            acousticness,
+            energy,
+            instrumentalness,
+            liveness,
+            loudness,
+            speechiness,
+            tempo,
+            time_signature,
+        ]
 
     def final_prep(self):
         df = pd.read_csv('data/playlist_songs.csv')
@@ -137,13 +148,13 @@ class SpotifyData:
         album = []
         duration = []
         popularity = []
-        for i, items in enumerate(results['items']):
-                track_name.append(items['name'])
-                track_id.append(items['id'])
-                artist.append(items["artists"][0]["name"])
-                duration.append(items["duration_ms"])
-                album.append(items["album"]["name"])
-                popularity.append(items["popularity"])
+        for items in results['items']:
+            track_name.append(items['name'])
+            track_id.append(items['id'])
+            artist.append(items["artists"][0]["name"])
+            duration.append(items["duration_ms"])
+            album.append(items["album"]["name"])
+            popularity.append(items["popularity"])
 
         # Create the final df   
         df_favourite = pd.DataFrame({"track_name": track_name,
@@ -178,10 +189,6 @@ class SpotifyData:
         df_fav['favorite'] = 1
         df['favorite'] = 0
 
-        # Сравниваем колонки двух датасетов
-        # ## Подготовка к созданию модели
-
-         # Объединяем датасет всех песен с любимыми
         combined = pd.concat([df, df_fav])
 
         # Датафрэйм с любимыми песнями
@@ -190,7 +197,6 @@ class SpotifyData:
         # Убираем любимые песни с плэйлиста
         df = combined.loc[combined['favorite'] != 1]
 
-         # Сохраняем в csv для создания модели
         df.to_csv('encoded_playlist_songs.csv', index=False)
         #df_fav.to_csv('favorite_songs.csv', index=False)
         return df, df_fav
@@ -267,7 +273,7 @@ class Spotify:
         id = []
         name = []
         num_tracks = []
-    
+
         # Make the API request
         playlists = sp.user_playlists(username)
         for playlist in playlists['items']:
@@ -275,9 +281,7 @@ class Spotify:
             name.append(playlist['name'])
             num_tracks.append(playlist['tracks']['total'])
 
-        # Create the final df   
-        df_playlists = pd.DataFrame({"id":id, "name": name, "#tracks": num_tracks})
-        return df_playlists
+        return pd.DataFrame({"id":id, "name": name, "#tracks": num_tracks})
     def enrich_playlist(self, sp, username, playlist_id, playlist_tracks):
         index = 0
         results = []
