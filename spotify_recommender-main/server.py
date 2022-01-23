@@ -13,9 +13,8 @@ TEMPLATE_FILE = "index.html"
 
 @app.route("/", methods=['GET', 'POST'])
 def upload_username():
-    if request.method == "POST":
-        if request.form["username"] != "" and request.form["username"] != " ":
-            set_results(request.form["username"])
+    if request.method == "POST" and request.form["username"] not in ["", " "]:
+        set_results(request.form["username"])
     return render_template(TEMPLATE_FILE)
 
 
